@@ -1,6 +1,4 @@
-
-from pyexpat import model
-from turtle import update
+from os import stat
 from fastapi import HTTPException
 from fastapi import FastAPI
 from fastapi import Depends
@@ -79,8 +77,21 @@ async def update_todo(todo_id:int,todo:Todo,db:Session=Depends(get_db)):
         'transaction':'successfull'
     }
 
+@app.delete("/{todo_id}")
+async def delete_todo(todo_id:int, db:Session=Depends(get_db)):
+    todo_model=db.query(models.Todos).filter(models.Todos.id==todo_id).first()
+    if todo_model is None:
+        raise http_exception()
+    db.query(models.Todos).filter(models.Todos.id==todo_id).delete()
+    db.commit()
+    return success_response(200)
+
+def success_response(status_code:int):
+    return {
+        "status":status_code,
+        'transaction':'successfull'
+    }
 
 def http_exception():
     raise HTTPException(status_code=404,detail="Todo Not Found")
     
-
