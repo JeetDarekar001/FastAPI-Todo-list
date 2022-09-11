@@ -1,4 +1,6 @@
 
+from base64 import encode
+from datetime import datetime, timedelta
 from fastapi import FastAPI,Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -7,10 +9,17 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from jose import jwt
+
+SECRET_KEY = "TESTABHIJIT"
+ALGORITHM = "HS256"
 
 app = FastAPI()
 
 models.Base.metadata.create_all(bind=engine)
+
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="token")
+# Dependcy ; which is going to extract auth from header
 def get_db():
     try:
         db= SessionLocal()
@@ -24,6 +33,7 @@ class CreateUser(BaseModel):
     first_name:str
     last_name:str
     password:str
+
 
 bcrpyt_context = CryptContext(schemes=["bcrypt"])
 
@@ -45,6 +55,15 @@ def auth_user(username:str,password:str,db):
 
 # Creating New User and adding the details in Databse.
 # Password is encrypted using Bcrypt library.
+
+def create_access_token(username:str, user_id :str ,expires_delta : Optional[timedelta] = None):
+    encode={"sub":username,"id": user_id}
+    if expires_delta :
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    encode.update({"exp": expire})
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 @app.post("/create/user")
 async def create_user(create_user:CreateUser,db:Session=Depends(get_db)):
@@ -70,8 +89,10 @@ async def login_for_access_token(formdata:OAuth2PasswordRequestForm=Depends(),db
     if not user:
         raise HTTPException(status_code=404 , detail="user Not Found") 
     
-    return "user Validated"
+    token_expires=timedelta( minutes=20 )
+    token= create_access_token( user.username, user.id, expires_delta=token_expires)
 
+    return {"token":token}
 
    
 
