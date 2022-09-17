@@ -1,6 +1,9 @@
+from http.client import responses
+import sys
+sys.path.append("..")
 
 from datetime import datetime, timedelta
-from fastapi import FastAPI,Depends, HTTPException,status
+from fastapi import Depends, HTTPException,status,APIRouter
 from pydantic import BaseModel
 from typing import Optional
 import models
@@ -13,8 +16,11 @@ from jose import jwt , JWTError
 SECRET_KEY = "TESTABHIJIT"
 ALGORITHM = "HS256"
 
-app = FastAPI()
-
+router=APIRouter(
+        prefix="/auth",
+        tags=["auth"],
+        responses={401:{"user":"Not Authorized"}}
+)
 models.Base.metadata.create_all(bind=engine)
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="token")
@@ -78,7 +84,7 @@ async def get_current_user(token:str = Depends(oauth2_bearer)):
         raise get_user_exception()
 
 
-@app.post("/create/user")
+@router.post("/create/user")
 async def create_user(create_user:CreateUser,db:Session=Depends(get_db)):
     create_user_model=models.Users()
     create_user_model.email=create_user.email
@@ -96,7 +102,7 @@ async def create_user(create_user:CreateUser,db:Session=Depends(get_db)):
         raise HTTPException(status_code=500,detail=f'Username/Email Already Present={e}')
 
 # Signing using OAuth
-@app.post('/token')
+@router.post('/token')
 async def login_for_access_token(formdata:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
     user=auth_user(formdata.username, formdata.password,db)
     if not user:
