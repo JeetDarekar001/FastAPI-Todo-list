@@ -1,11 +1,11 @@
 
 
 
-from fastapi import FastAPI
+from fastapi import FastAPI,Depends
 import models
 from database import engine
-from routers import auth,todos
-from company import compantapis
+from routers import auth,todos,users
+from company import compantapis,dependencies
 
 app=FastAPI()
 
@@ -16,5 +16,8 @@ app.include_router(
     compantapis.router,
     prefix="/company",
     tags=["Companyapis"],
+    dependencies=[Depends(dependencies.get_token_header)],
     responses={418:{"description":"Internal Use Only"}}
     )
+app.include_router(users.app,
+prefix="/users",tags=["users"])
