@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from fastapi import FastAPI,APIRouter
 from fastapi import Depends
 from typing import Optional
-from pydantic import BaseModel,Field  
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import models
 from database import SessionLocal, engine
